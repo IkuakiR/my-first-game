@@ -1,0 +1,60 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+public class CameraChecker : MonoBehaviour
+{
+
+    private enum Mode {
+        None,
+        Render,
+        RenderOut,
+    }
+
+    private Mode _mode;
+    private Camera currentCamera;
+
+    void Start() {
+        _mode = Mode.None;
+    }
+
+    void Update() {
+        _Dead();
+    }
+
+    void OnEnable() {
+        RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+    }
+
+    void OnDisable() {
+        RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+    }
+
+    void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera) {
+        currentCamera = camera;
+    }
+
+    private void OnWillRenderObject() {
+        if ((currentCamera == null) || (currentCamera.cullingMask & (1 << gameObject.layer)) == 0)
+        {
+            return;
+        }
+
+        if (currentCamera.name == "Main Camera")
+        {
+            _mode = Mode.Render;
+        }
+    }
+
+    private void _Dead() {
+        Vector3 cameraMinPos = Camera.main.ScreenToWorldPoint(Vector3.zero);
+        if (_mode == Mode.RenderOut && transform.position.x < cameraMinPos.x) {
+            Destroy(gameObject);
+        }
+
+        if (_mode == Mode.Render) {
+            _mode = Mode.RenderOut;
+        }
+    }
+}
