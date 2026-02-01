@@ -16,6 +16,11 @@ public class Player : MonoBehaviour
     [SerializeField, Header("点滅時間")]
     private float _flashTime;
 
+    [SerializeField, Header("ジャンプSE")]
+    private GameObject _jumpSE;
+    [SerializeField, Header("ダメージSE")]
+    private GameObject _damageSE;
+
     private Vector2 _inputDirection;
     private Rigidbody2D _rigid;
     private Animator _anim;
@@ -84,6 +89,7 @@ public class Player : MonoBehaviour
         if(transform.position.y - (halfScaleY - 0.1f) >= enemy.transform.position.y + (enemyHalfScaleY - 0.1f)) {
             Destroy(enemy);
             _rigid.AddForce(Vector2.up * _jumpSpeed, ForceMode2D.Impulse);
+            Instantiate(_jumpSE);
         }
         else {
             enemy.GetComponent<Enemy>().PlayerDamage(this);
@@ -126,12 +132,14 @@ public class Player : MonoBehaviour
         if (!context.performed || _bJump) return;
 
         _rigid.AddForce(Vector2.up * _jumpSpeed, ForceMode2D.Impulse);
+        Instantiate(_jumpSE);
         // _bJump = true;
         // _anim.SetBool("Jump", _bJump);
     }
 
     public void Damage(int damage) {
         _hp = Mathf.Max(_hp - damage, 0);
+        Instantiate(_damageSE);
         _Dead();
     }
 
