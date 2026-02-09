@@ -41,7 +41,6 @@ public class Player : MonoBehaviour
     }
 
     private void _Move() {
-        // if (_bJump) return;
         _rigid.linearVelocity = new Vector2(_inputDirection.x * _moveSpeed, _rigid.linearVelocity.y);
         _anim.SetBool("Walk", _inputDirection.x != 0.0f);
     }
@@ -59,10 +58,13 @@ public class Player : MonoBehaviour
         if (collision.gameObject.tag == "Enemy") {
             _HitEnemy(collision.gameObject);
         }
-        else if (collision.gameObject.tag == "Goal") {
-            FindObjectOfType<MainManager>().ShowGameClearUI();
+        else if (collision.gameObject.CompareTag("Goal")) {
+            var mm = FindObjectOfType<MainManager>();
+            if (mm != null) mm.ShowGameClearUI();
+
             enabled = false;
-            GetComponent<PlayerInput>().enabled = false;
+            var input = GetComponent<PlayerInput>();
+            if (input != null) input.enabled = false;
         }
     }
 
@@ -92,6 +94,9 @@ public class Player : MonoBehaviour
             Instantiate(_jumpSE);
         }
         else {
+            if (GameTimer.Instance != null)
+                GameTimer.Instance.AddPenalty(1f);
+
             enemy.GetComponent<Enemy>().PlayerDamage(this);
             gameObject.layer = LayerMask.NameToLayer("PlayerDamage");
             StartCoroutine(_Damage());
@@ -118,8 +123,11 @@ public class Player : MonoBehaviour
     }
 
     private void OnBecameInvisible() {
-        Camera camera = Camera.main;
-        if (camera.name == "Main Camera" && camera.transform.position.y > transform.position.y) {
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        if (cam.transform.position.y > transform.position.y)
+        {
             Destroy(gameObject);
         }
     }

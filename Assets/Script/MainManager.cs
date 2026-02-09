@@ -4,6 +4,7 @@ using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
+using TMPro;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,6 +12,9 @@ public class MainManager : MonoBehaviour
     private GameObject _gameOverUI;
     [SerializeField, Header("ゲームクリアUI")]
     private GameObject _gameClearUI;
+
+    [SerializeField, Header("クリアタイム表示")]
+    private TMP_Text _clearTimeText;
 
     [SerializeField, Header("BGM")]
     private AudioSource _bgm;
@@ -27,7 +31,10 @@ public class MainManager : MonoBehaviour
     void Start() {
         _player = FindObjectOfType<Player>().gameObject;
         _bShowUI = false;
-        FindObjectOfType<Fade>().FadeStart(_MainStart);
+
+        Fade fade = FindObjectOfType<Fade>();
+        if (fade != null) fade.FadeStart(_MainStart);
+
         _player.GetComponent<Player>().enabled = false;
         foreach (EnemySpawner enemySpawner in FindObjectsOfType<EnemySpawner>()) {
             enemySpawner.enabled = false;
@@ -39,7 +46,8 @@ public class MainManager : MonoBehaviour
         foreach (EnemySpawner enemySpawner in FindObjectsOfType<EnemySpawner>()) {
             enemySpawner.enabled = true;
         }
-
+        if (GameTimer.Instance != null)
+            GameTimer.Instance.ResetAndStart();
     }
 
     void Update() {
@@ -49,6 +57,9 @@ public class MainManager : MonoBehaviour
     private void _ShowGameOverUI() {
         if (_player != null || _gameOverUI.activeSelf) return;
 
+        if (GameTimer.Instance != null)
+            GameTimer.Instance.Stop();
+
         _gameOverUI.SetActive(true);
         _bShowUI = true;
         _bgm.Stop();
@@ -57,6 +68,17 @@ public class MainManager : MonoBehaviour
 
     public void ShowGameClearUI() {
         if (_gameClearUI.activeSelf) return;
+
+        if (GameTimer.Instance != null)
+        {
+            GameTimer.Instance.Stop();
+
+            if (LocalLeaderboard.Instance != null)
+                LocalLeaderboard.Instance.AddTimeSeconds(GameTimer.Instance.Elapsed);
+
+            if (_clearTimeText != null)
+                _clearTimeText.text = FormatTime(GameTimer.Instance.Elapsed);
+        }
         
         _gameClearUI.SetActive(true);
         _bShowUI = true;
@@ -66,6 +88,10 @@ public class MainManager : MonoBehaviour
 
     public void OnRestart(InputAction.CallbackContext context) {
         if (!_bShowUI || !context.performed) return;
+
+        if (GameTimer.Instance != null)
+            GameTimer.Instance.Stop();
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         Instantiate(_submitSE);
     }
@@ -73,5 +99,12 @@ public class MainManager : MonoBehaviour
     public void OnEscape(InputAction.CallbackContext context) {
         if (!context.performed) return;
         Application.Quit();
+    }
+
+    private string FormatTime(float t)
+    {
+        int minutes = (int)(t / 60f);
+        float seconds = t % 60f;
+        return $"{minutes:00}:{seconds:00.000}";
     }
 }
